@@ -39,6 +39,7 @@ async function run() {
     const bookingCollection = client.db("sb_shop").collection("booking");
     const reviewsCollection = client.db("sb_shop").collection("reviews");
     const userCollection = client.db("sb_shop").collection("users");
+    const paymentCollection = client.db("sb_shop").collection("payments");
 
      const verifyAdmin = async (req, res, next) => {
        const requester = req.decoded.email;
@@ -129,6 +130,25 @@ async function run() {
       const result = await bookingCollection.deleteOne(query);
       res.send(result);
     });
+
+        app.patch("/booking/:id", verifyJWT, async (req, res) => {
+          const id = req.params.id;
+          const payment = req.body;
+          const filter = { _id: ObjectId(id) };
+          const updatedDoc = {
+            $set: {
+              paid: true,
+              transactionId: payment.transactionId,
+            },
+          };
+
+          const result = await paymentCollection.insertOne(payment);
+          const updatedBooking = await bookingCollection.updateOne(
+            filter,
+            updatedDoc
+          );
+          res.send(updatedBooking);
+        });
 
     app.get("/admin/:email", async (req, res) => {
       const email = req.params.email;
