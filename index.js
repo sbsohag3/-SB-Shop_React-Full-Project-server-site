@@ -39,6 +39,18 @@ async function run() {
     const reviewsCollection = client.db("sb_shop").collection("reviews");
     const userCollection = client.db("sb_shop").collection("users");
 
+     const verifyAdmin = async (req, res, next) => {
+       const requester = req.decoded.email;
+       const requesterAccount = await userCollection.findOne({
+         email: requester,
+       });
+       if (requesterAccount.role === "admin") {
+         next();
+       } else {
+         res.status(403).send({ message: "forbidden" });
+       }
+     };
+
     app.get("/products", async (req, res) => {
       const query = {};
       const cursor = productsCollection.find(query);
@@ -92,6 +104,16 @@ async function run() {
       res.send(result);
     });
 
+    app.put("/user/admin/:email", verifyJWT, verifyAdmin, async (req, res) => {
+      const email = req.params.email;
+      const filter = { email: email };
+      const updateDoc = {
+        $set: { role: "admin" },
+      };
+      const result = await userCollection.updateOne(filter, updateDoc);
+      res.send(result);
+    });
+
     app.put("/user/:email", async (req, res) => {
       const email = req.params.email;
       const user = req.body;
@@ -109,7 +131,7 @@ async function run() {
       res.send({ result, token });
     });
 
-    app.get("/users", async (req, res) => {
+    app.get("/users",verifyJWT, async (req, res) => {
       const users = await userCollection.find().toArray();
       res.send(users);
     });
