@@ -58,11 +58,18 @@ async function run() {
       res.send(products);
     });
 
-      app.post("/product", async (req, res) => {
+      app.post("/product",verifyJWT, verifyAdmin, async (req, res) => {
         const product = req.body;
         const result = await productsCollection.insertOne(product);
         res.send(result);
       });
+
+       app.delete("/product/:id", async (req, res) => {
+         const id = req.params.id;
+         const query = { _id: ObjectId(id) };
+         const result = await productsCollection.deleteOne(query);
+         res.send(result);
+       });
 
     app.get("/reviews", async (req, res) => {
       const query = {};
@@ -106,7 +113,7 @@ async function run() {
     app.delete("/booking/:id", async (req, res) => {
       const id = req.params.id;
       const query = { _id: ObjectId(id) };
-      const result = await productsCollection.deleteOne(query);
+      const result = await bookingCollection.deleteOne(query);
       res.send(result);
     });
 
