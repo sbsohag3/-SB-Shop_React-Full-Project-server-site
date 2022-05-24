@@ -41,29 +41,29 @@ async function run() {
     const userCollection = client.db("sb_shop").collection("users");
     const paymentCollection = client.db("sb_shop").collection("payments");
 
-     const verifyAdmin = async (req, res, next) => {
-       const requester = req.decoded.email;
-       const requesterAccount = await userCollection.findOne({
-         email: requester,
-       });
-       if (requesterAccount.role === "admin") {
-         next();
-       } else {
-         res.status(403).send({ message: "forbidden" });
-       }
-     };
+    const verifyAdmin = async (req, res, next) => {
+      const requester = req.decoded.email;
+      const requesterAccount = await userCollection.findOne({
+        email: requester,
+      });
+      if (requesterAccount.role === "admin") {
+        next();
+      } else {
+        res.status(403).send({ message: "forbidden" });
+      }
+    };
 
-     app.post("/create-payment-intent", async (req, res) => {
-       const product = req.body;
-       const price = product.totalPrice;
-       const amount = price * 100;
-       const paymentIntent = await stripe.paymentIntents.create({
-         amount: amount,
-         currency: "usd",
-         payment_method_types: ["card"],
-       });
-       res.send({ clientSecret: paymentIntent.client_secret });
-     });
+    app.post("/create-payment-intent", async (req, res) => {
+      const product = req.body;
+      const price = product.totalPrice;
+      const amount = price * 100;
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: amount,
+        currency: "usd",
+        payment_method_types: ["card"],
+      });
+      res.send({ clientSecret: paymentIntent.client_secret });
+    });
 
     app.get("/products", async (req, res) => {
       const query = {};
@@ -72,24 +72,30 @@ async function run() {
       res.send(products);
     });
 
-      app.post("/product",verifyJWT, verifyAdmin, async (req, res) => {
-        const product = req.body;
-        const result = await productsCollection.insertOne(product);
-        res.send(result);
-      });
+    app.post("/product", verifyJWT, verifyAdmin, async (req, res) => {
+      const product = req.body;
+      const result = await productsCollection.insertOne(product);
+      res.send(result);
+    });
 
-       app.delete("/product/:id", async (req, res) => {
-         const id = req.params.id;
-         const query = { _id: ObjectId(id) };
-         const result = await productsCollection.deleteOne(query);
-         res.send(result);
-       });
+    app.delete("/product/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: ObjectId(id) };
+      const result = await productsCollection.deleteOne(query);
+      res.send(result);
+    });
 
     app.get("/reviews", async (req, res) => {
       const query = {};
       const cursor = reviewsCollection.find(query);
       const reviews = await cursor.toArray();
       res.send(reviews);
+    });
+
+    app.post("/review", async (req, res) => {
+      const booking = req.body;
+      const result = await reviewsCollection.insertOne(booking);
+      res.send(result);
     });
 
     app.get("/bookings", async (req, res) => {
@@ -111,7 +117,7 @@ async function run() {
       }
     });
 
-    app.get("/booking/:id",verifyJWT, async (req, res) => {
+    app.get("/booking/:id", verifyJWT, async (req, res) => {
       const id = req.params.id;
       const query = { _id: ObjectId(id) };
       const booking = await bookingCollection.findOne(query);
@@ -131,24 +137,24 @@ async function run() {
       res.send(result);
     });
 
-        app.patch("/booking/:id", verifyJWT, async (req, res) => {
-          const id = req.params.id;
-          const payment = req.body;
-          const filter = { _id: ObjectId(id) };
-          const updatedDoc = {
-            $set: {
-              paid: true,
-              transactionId: payment.transactionId,
-            },
-          };
+    app.patch("/booking/:id", verifyJWT, async (req, res) => {
+      const id = req.params.id;
+      const payment = req.body;
+      const filter = { _id: ObjectId(id) };
+      const updatedDoc = {
+        $set: {
+          paid: true,
+          transactionId: payment.transactionId,
+        },
+      };
 
-          const result = await paymentCollection.insertOne(payment);
-          const updatedBooking = await bookingCollection.updateOne(
-            filter,
-            updatedDoc
-          );
-          res.send(updatedBooking);
-        });
+      const result = await paymentCollection.insertOne(payment);
+      const updatedBooking = await bookingCollection.updateOne(
+        filter,
+        updatedDoc
+      );
+      res.send(updatedBooking);
+    });
 
     app.get("/admin/:email", async (req, res) => {
       const email = req.params.email;
@@ -184,18 +190,17 @@ async function run() {
       res.send({ result, token });
     });
 
-    app.get("/users",verifyJWT, async (req, res) => {
+    app.get("/users", verifyJWT, async (req, res) => {
       const users = await userCollection.find().toArray();
       res.send(users);
     });
 
-     app.delete("/user/:id", async (req, res) => {
-       const id = req.params.id;
-       const query = { _id: ObjectId(id) };
-       const result = await userCollection.deleteOne(query);
-       res.send(result);
-     });
-
+    app.delete("/user/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: ObjectId(id) };
+      const result = await userCollection.deleteOne(query);
+      res.send(result);
+    });
   } finally {
   }
 }
